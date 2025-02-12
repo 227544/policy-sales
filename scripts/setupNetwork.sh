@@ -6,15 +6,16 @@ CA_VERSION="1.5.2"
 
 function networkUp() {
 	networkDown
-    curl -sSL https://bit.ly/2ysbOFE | bash -s -- ${FABRIC_VERSION} ${CA_VERSION}
-	cd $SRC_DIR/..
-    cd fabric-samples
+  build_chaincode
+  cd $SRC_DIR/..
+  curl -sSL https://bit.ly/2ysbOFE | bash -s -- ${FABRIC_VERSION} ${CA_VERSION}
+	cd fabric-samples
 	if [ "${FABRIC_VERSION}" == "2.2.3" ]; then
 		git checkout release-2.2
 	fi
 	cd test-network
 	./network.sh up createChannel -ca -c mychannel -s couchdb
-	./network.sh deployCC -ccn insurance-chaincode -ccv 1 -ccl java -ccp ../../insurance-chaincode
+	./network.sh deployCC -ccn insurance-chaincode -ccv 1 -ccl java -ccp "$SRC_DIR/../insurance-chaincode"
   build_and_run_api
 }
 
@@ -57,6 +58,11 @@ function copy_files() {
     cp "peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/"* "$SRC_DIR/../insurance-sales-api/src/main/resources/credentials/admin-key.pem"
     cp "peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/"* "$SRC_DIR/../insurance-sales-api/src/main/resources/credentials/admin-cert.pem"
   fi
+}
+
+function build_chaincode() {
+  cd "$SRC_DIR/../insurance-chaincode"
+  ./gradlew build installDist
 }
 
 function build_and_run_api() {

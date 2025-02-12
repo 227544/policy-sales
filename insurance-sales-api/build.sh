@@ -16,15 +16,19 @@ prepare_directories() {
 
 # Function to copy necessary files
 copy_files() {
-    cp ../fabric-operations-console/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt src/main/resources/tls/ca.crt
-    cp -r ../fabric-operations-console/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/* src/main/resources/msp
-    cp ../fabric-operations-console/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/* src/main/resources/credentials/admin-key.pem
-    cp ../fabric-operations-console/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/* src/main/resources/credentials/admin-cert.pem
+    cp ../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt src/main/resources/tls/ca.crt
+    cp -r ../fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/* src/main/resources/msp
+    cp ../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/* src/main/resources/credentials/admin-key.pem
+    cp ../fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/* src/main/resources/credentials/admin-cert.pem
 }
 
 # Function to build and run Docker container
 build_and_run_docker() {
     # Build the project
+    mvn clean
+
+    mvn dependency:purge-local-repository
+
     mvn clean package
 
     # Remove existing Docker container if it exists

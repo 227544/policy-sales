@@ -7,13 +7,14 @@
   <version>1.0-SNAPSHOT</version>
 
   <name>insurance-sales-api</name>
-  <url>http://www.example.com</url>
+  <!-- <url>http://www.example.com</url> -->
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>11</maven.compiler.release>
     <spring-boot.version>2.7.5</spring-boot.version>
+    <fabric-sdk.version>2.2.0</fabric-sdk.version>
+    <bouncycastle.version>1.68</bouncycastle.version>
   </properties>
 
   <repositories>
@@ -52,17 +53,17 @@
     <dependency>
       <groupId>org.hyperledger.fabric</groupId>
       <artifactId>fabric-gateway-java</artifactId>
-      <version>2.2.0</version>
+      <version>${fabric-sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>org.hyperledger.fabric-sdk-java</groupId>
       <artifactId>fabric-sdk-java</artifactId>
-      <version>2.2.0</version>
+      <version>${fabric-sdk.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.springfox</groupId>
-      <artifactId>springfox-boot-starter</artifactId>
-      <version>3.0.0</version>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-ui</artifactId>
+      <version>1.6.14</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -72,16 +73,17 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
-      <version>1.68</version>
+      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
-      <version>1.68</version>
+      <version>${bouncycastle.version}</version>
     </dependency>
   </dependencies>
 
   <build>
+    <sourceDirectory>src/main/java</sourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
@@ -97,16 +99,10 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
         <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>com.example.insurance.InsuranceApiApplication</mainClass>
-            </manifest>
-          </archive>
+          <release>11</release>
         </configuration>
       </plugin>
     </plugins>

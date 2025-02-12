@@ -7,8 +7,14 @@ import org.hyperledger.fabric.contract.annotation.Info;
 import org.hyperledger.fabric.contract.Context;
 import org.hyperledger.fabric.shim.ChaincodeException;
 import org.hyperledger.fabric.shim.ChaincodeStub;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
+
+import com.example.chaincode.dto.InsuranceProductDTO;
+import com.example.chaincode.dto.PassengerDTO;
+import com.example.chaincode.dto.PolicyDTO;
+import com.example.chaincode.dto.TravelInfoDTO;
 
 @Contract(name = "PolicyContract", info = @Info(title = "Policy Management", description = "Smart Contract for managing insurance policies", version = "1.0.0"))
 public class PolicyContract implements ContractInterface {
@@ -21,59 +27,89 @@ public class PolicyContract implements ContractInterface {
     }
 
     @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public Policy createPolicy(Context ctx, String policyId, String holderName, double premium, String status) {
+    public String createPolicy(Context ctx, String policyJson) {
         ChaincodeStub stub = ctx.getStub();
-        String txId = stub.getTxId();
+        String policyId = stub.getTxId();
 
         try {
-            logger.info("Transaction ID: " + txId + " | Request received: createPolicy with policyId=" + policyId);
+            logger.info("Transaction ID: " + policyId + " | Request received: createPolicy");
 
-            // Validações
-            validateInputs(policyId, holderName, premium, status);
+            // Convert JSON string to PolicyDTO
+            PolicyDTO policyDTO = PolicyDTO.fromJson(policyJson);
 
-            // Verificar se já existe
-            String existingPolicy = stub.getStringState(policyId);
-            if (existingPolicy != null && !existingPolicy.isEmpty()) {
-                throw new ChaincodeException("Policy with ID " + policyId + " already exists.", "POLICY_EXISTS");
+            // Criar TravelInfo
+            TravelInfoDTO travelInfo = new TravelInfoDTO(policyDTO.getTravelInfo().getDestination(),
+                    policyDTO.getTravelInfo().getStartDate(), policyDTO.getTravelInfo().getEndDate(),
+                    policyDTO.getTravelInfo().getNumberOfPassengers());
+
+            // Criar lista de passageiros
+            List<PassengerDTO> passengers = new ArrayList<>();
+            for (PassengerDTO passengerDTO : policyDTO.getPassengers()) {
+                PassengerDTO passenger = new PassengerDTO(passengerDTO.getName(), passengerDTO.getDocument(),
+                        passengerDTO.getBirthDate(), passengerDTO.getEmail(), passengerDTO.getPhone(),
+                        passengerDTO.getAddress());
+                passengers.add(passenger);
             }
 
-            // Criar e armazenar a apólice
-            Policy policy = new Policy(policyId, holderName, premium, status);
-            stub.putStringState(policyId, policy.toJson());
-            logger.info("Transaction ID: " + txId + " | Policy created: " + policy.toJson());
+            // Criar InsuranceProduct
+            InsuranceProductDTO insuranceProduct = new InsuranceProductDTO(
+                    policyDTO.getInsuranceProduct().getCoverageName(),
+                    policyDTO.getInsuranceProduct().getInsuredAmount());
 
-            return policy;
+            // Criar e armazenar a apólice
+            PolicyDTO policy = new PolicyDTO(policyId, policyDTO.getPolicyHolder(), policyDTO.getPremium(),
+                    policyDTO.getPolicyStatus(), travelInfo, passengers, insuranceProduct);
+            stub.putStringState(policyId, policy.toJson());
+            logger.info("Transaction ID: " + policyId + " | Policy created: " + policy.toJson());
+
+            // Retornar a chave composta como policyId
+            return policyId;
 
         } catch (Exception e) {
-            logger.severe("Transaction ID: " + txId + " | Error in createPolicy: " + e.getMessage());
+            logger.severe("Transaction ID: " + policyId + " | Error in createPolicy: " + e.getMessage());
             throw new ChaincodeException("Unexpected error: " + e.getMessage(), "UNKNOWN_ERROR", e);
         }
     }
 
     @Transaction(intent = Transaction.TYPE.EVALUATE)
-    public Policy queryPolicy(Context ctx, String policyId) {
+    public PolicyDTO queryPolicy(Context ctx, String policyId) {
         ChaincodeStub stub = ctx.getStub();
+
+        // Verificar se o policyId não é nulo ou vazio
+        if (policyId == null || policyId.isEmpty()) {
+            String errorMessage = "Policy ID cannot be null or empty.";
+            logger.severe(errorMessage);
+            throw new ChaincodeException(errorMessage, "INVALID_POLICY_ID");
+        }
 
         try {
             logger.info("Querying policy with ID: " + policyId);
 
+            // Obter o estado da apólice do ledger
             String policyJson = stub.getStringState(policyId);
+
+            // Verificar se a apólice existe
             if (policyJson == null || policyJson.isEmpty()) {
-                throw new ChaincodeException("Policy with ID " + policyId + " does not exist.", "POLICY_NOT_FOUND");
+                String errorMessage = "Policy with ID " + policyId + " does not exist.";
+                logger.severe(errorMessage);
+                throw new ChaincodeException(errorMessage, "POLICY_NOT_FOUND");
             }
 
-            Policy policy = Policy.fromJson(policyJson);
+            // Converter JSON para PolicyDTO
+            PolicyDTO policy = PolicyDTO.fromJson(policyJson);
+            policy.setPolicyId(policyId);
             logger.info("Policy found: " + policy.toJson());
             return policy;
 
         } catch (Exception e) {
-            logger.severe("Error in queryPolicy: " + e.getMessage());
-            throw new ChaincodeException("Failed to query policy: " + e.getMessage(), "QUERY_ERROR", e);
+            String errorMessage = "Failed to query policy: " + e.getMessage();
+            logger.severe(errorMessage);
+            throw new ChaincodeException(errorMessage, "QUERY_ERROR", e);
         }
     }
 
     @Transaction(intent = Transaction.TYPE.SUBMIT)
-    public Policy updatePolicyStatus(Context ctx, String policyId, String newStatus) {
+    public PolicyDTO updatePolicyStatus(Context ctx, String policyId, String newStatus) {
         ChaincodeStub stub = ctx.getStub();
 
         try {
@@ -84,8 +120,8 @@ public class PolicyContract implements ContractInterface {
                 throw new ChaincodeException("Policy with ID " + policyId + " does not exist.", "POLICY_NOT_FOUND");
             }
 
-            Policy policy = Policy.fromJson(policyJson);
-            policy.setStatus(newStatus);
+            PolicyDTO policy = PolicyDTO.fromJson(policyJson);
+            policy.setPolicyStatus(newStatus);
 
             stub.putStringState(policyId, policy.toJson());
             logger.info("Policy updated: " + policy.toJson());
@@ -95,21 +131,6 @@ public class PolicyContract implements ContractInterface {
         } catch (Exception e) {
             logger.severe("Error in updatePolicyStatus: " + e.getMessage());
             throw new ChaincodeException("Failed to update policy: " + e.getMessage(), "UPDATE_ERROR", e);
-        }
-    }
-
-    private void validateInputs(String policyId, String holderName, double premium, String status) {
-        if (policyId == null || policyId.isEmpty()) {
-            throw new ChaincodeException("Policy ID cannot be null or empty", "INVALID_POLICY_ID");
-        }
-        if (holderName == null || holderName.isEmpty()) {
-            throw new ChaincodeException("Holder Name cannot be null or empty", "INVALID_HOLDER_NAME");
-        }
-        if (premium <= 0) {
-            throw new ChaincodeException("Premium must be greater than 0", "INVALID_PREMIUM");
-        }
-        if (status == null || status.isEmpty()) {
-            throw new ChaincodeException("Status cannot be null or empty", "INVALID_STATUS");
         }
     }
 }

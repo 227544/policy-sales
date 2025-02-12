@@ -1,5 +1,9 @@
 package com.example.insurance.service;
 
+import com.example.insurance.dto.PolicyDTO;
+import com.example.insurance.dto.TravelInfoDTO;
+import com.example.insurance.dto.InsuranceProductDTO;
+import com.example.insurance.dto.PassengerDTO;
 import org.hyperledger.fabric.gateway.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +13,11 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class PolicyService {
@@ -51,26 +60,58 @@ public class PolicyService {
         walletService.addAdminIdentity(wallet);
 
         Gateway.Builder builder = Gateway.createBuilder();
-        builder.identity(wallet, "admin").networkConfig(Paths.get(connectionProfilePath))
-                .discovery(true);
+        builder.identity(wallet, "admin").networkConfig(Paths.get(connectionProfilePath)).discovery(true);
         this.gateway = builder.connect();
         logger.info("Connected to gateway");
     }
 
-    public String createPolicy(String policyId, String holderName, double premium, String status) throws Exception {
-        logger.info("Creating policy with ID: {}, holderName: {}, premium: {}, status: {}", policyId, holderName,
-                premium, status);
-        Network network = gateway.getNetwork("mychannel");
-        Contract contract = network.getContract("insurance-chaincode");
+    public Map<String, String> createPolicy(PolicyDTO policyDTO) {
+        try {
+            logger.info("Request received: createPolicy");
 
-        byte[] result = contract.submitTransaction("createPolicy", policyId, holderName, String.valueOf(premium),
-                status);
-        String response = new String(result);
-        logger.info("Created policy with ID: {}, response: {}", policyId, response);
-        return response;
+            // Criar TravelInfo
+            TravelInfoDTO travelInfo = new TravelInfoDTO(policyDTO.getTravelInfo().getDestination(),
+                    policyDTO.getTravelInfo().getStartDate(), policyDTO.getTravelInfo().getEndDate(),
+                    policyDTO.getTravelInfo().getNumberOfPassengers());
+
+            // Criar lista de passageiros
+            List<PassengerDTO> passengers = new ArrayList<>();
+            if (policyDTO.getPassengers() != null) {
+                for (PassengerDTO passengerDTO : policyDTO.getPassengers()) {
+                    PassengerDTO passenger = new PassengerDTO(passengerDTO.getName(), passengerDTO.getDocument(),
+                            passengerDTO.getBirthDate(), passengerDTO.getEmail(), passengerDTO.getPhone(),
+                            passengerDTO.getAddress());
+                    passengers.add(passenger);
+                }
+            }
+
+            // Criar InsuranceProduct
+            InsuranceProductDTO insuranceProduct = new InsuranceProductDTO(
+                    policyDTO.getInsuranceProduct().getCoverageName(),
+                    policyDTO.getInsuranceProduct().getInsuredAmount());
+
+            // Criar e armazenar a apólice
+            PolicyDTO policy = new PolicyDTO(null, policyDTO.getPolicyHolder(), policyDTO.getPremium(), travelInfo,
+                    passengers, insuranceProduct);
+
+            Network network = gateway.getNetwork("mychannel");
+            Contract contract = network.getContract("insurance-chaincode");
+            byte[] result = contract.submitTransaction("createPolicy", policy.toJson());
+
+            String policyId = new String(result);
+            logger.info("Policy created with ID: " + policyId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("policyId", policyId);
+            return response;
+
+        } catch (Exception e) {
+            logger.error("Error in createPolicy: " + e.getMessage());
+            throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
+        }
     }
 
-    public String queryPolicy(String policyId) throws Exception {
+    public PolicyDTO queryPolicy(String policyId) throws Exception {
         logger.info("Querying policy with ID: {}", policyId);
         Network network = gateway.getNetwork("mychannel");
         Contract contract = network.getContract("insurance-chaincode");
@@ -78,17 +119,23 @@ public class PolicyService {
         byte[] result = contract.evaluateTransaction("queryPolicy", policyId);
         String response = new String(result);
         logger.info("Queried policy with ID: {}, response: {}", policyId, response);
-        return response;
+        return PolicyDTO.fromJson(response);
     }
 
-    public String updatePolicyStatus(String policyId, String newStatus) throws Exception {
+    public PolicyDTO updatePolicyStatus(String policyId, String newStatus) throws Exception {
         logger.info("Updating policy status with ID: {} to {}", policyId, newStatus);
         Network network = gateway.getNetwork("mychannel");
         Contract contract = network.getContract("insurance-chaincode");
 
-        byte[] result = contract.submitTransaction("updatePolicyStatus", policyId, newStatus);
+        byte[] result;
+        try {
+            result = contract.submitTransaction("updatePolicyStatus", policyId, newStatus);
+        } catch (ContractException | TimeoutException | InterruptedException e) {
+            logger.error("Error updating policy status: {}", e.getMessage());
+            throw new RuntimeException("Error updating policy status", e);
+        }
         String response = new String(result);
         logger.info("Updated policy status with ID: {}, response: {}", policyId, response);
-        return response;
+        return PolicyDTO.fromJson(response);
     }
 }
