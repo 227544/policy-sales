@@ -1,9 +1,12 @@
 package com.example.insurance.service;
 
+import com.example.insurance.dto.CreatePolicyDTO;
 import com.example.insurance.dto.PolicyDTO;
-import com.example.insurance.dto.TravelInfoDTO;
-import com.example.insurance.dto.InsuranceProductDTO;
-import com.example.insurance.dto.PassengerDTO;
+import com.example.insurance.dto.RefundDTO;
+import com.example.insurance.dto.UpdatePolicyStatusDTO;
+import com.example.insurance.dto.CancelPolicyDTO;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hyperledger.fabric.gateway.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,38 +68,13 @@ public class PolicyService {
         logger.info("Connected to gateway");
     }
 
-    public Map<String, String> createPolicy(PolicyDTO policyDTO) {
+    public Map<String, String> createPolicy(CreatePolicyDTO createPolicyDTO) {
         try {
             logger.info("Request received: createPolicy");
 
-            // Criar TravelInfo
-            TravelInfoDTO travelInfo = new TravelInfoDTO(policyDTO.getTravelInfo().getDestination(),
-                    policyDTO.getTravelInfo().getStartDate(), policyDTO.getTravelInfo().getEndDate(),
-                    policyDTO.getTravelInfo().getNumberOfPassengers());
-
-            // Criar lista de passageiros
-            List<PassengerDTO> passengers = new ArrayList<>();
-            if (policyDTO.getPassengers() != null) {
-                for (PassengerDTO passengerDTO : policyDTO.getPassengers()) {
-                    PassengerDTO passenger = new PassengerDTO(passengerDTO.getName(), passengerDTO.getDocument(),
-                            passengerDTO.getBirthDate(), passengerDTO.getEmail(), passengerDTO.getPhone(),
-                            passengerDTO.getAddress());
-                    passengers.add(passenger);
-                }
-            }
-
-            // Criar InsuranceProduct
-            InsuranceProductDTO insuranceProduct = new InsuranceProductDTO(
-                    policyDTO.getInsuranceProduct().getCoverageName(),
-                    policyDTO.getInsuranceProduct().getInsuredAmount());
-
-            // Criar e armazenar a apólice
-            PolicyDTO policy = new PolicyDTO(null, policyDTO.getPolicyHolder(), policyDTO.getPremium(), travelInfo,
-                    passengers, insuranceProduct);
-
             Network network = gateway.getNetwork("mychannel");
             Contract contract = network.getContract("insurance-chaincode");
-            byte[] result = contract.submitTransaction("createPolicy", policy.toJson());
+            byte[] result = contract.submitTransaction("createPolicy", createPolicyDTO.toJson());
 
             String policyId = new String(result);
             logger.info("Policy created with ID: " + policyId);
@@ -122,20 +100,69 @@ public class PolicyService {
         return PolicyDTO.fromJson(response);
     }
 
-    public PolicyDTO updatePolicyStatus(String policyId, String newStatus) throws Exception {
-        logger.info("Updating policy status with ID: {} to {}", policyId, newStatus);
+    public List<String> queryAllPolicies() throws Exception {
+        logger.info("Querying all policy IDs");
+        Network network = gateway.getNetwork("mychannel");
+        Contract contract = network.getContract("insurance-chaincode");
+
+        byte[] result = contract.evaluateTransaction("queryAllPolicies");
+        String response = new String(result);
+        logger.info("Queried all policy IDs, response: {}", response);
+
+        // Verifique se a resposta não é nula ou vazia
+        if (response == null || response.isEmpty()) {
+            logger.warn("No policy IDs found");
+            return new ArrayList<>();
+        }
+
+        return new ObjectMapper().readValue(response, new TypeReference<List<String>>() {
+        });
+    }
+
+    public List<PolicyDTO> queryByHolderdocumentId(String documentId) throws Exception {
+        logger.info("Querying policies by holder documentId: {}", documentId);
+        Network network = gateway.getNetwork("mychannel");
+        Contract contract = network.getContract("insurance-chaincode");
+
+        byte[] result = contract.evaluateTransaction("queryByHolderdocumentId", documentId);
+        String response = new String(result);
+        logger.info("Queried policies by holder documentId: {}, response: {}", documentId, response);
+        return PolicyDTO.fromJsonList(response);
+    }
+
+    public PolicyDTO updatePolicyStatus(UpdatePolicyStatusDTO updatePolicyStatusDTO) throws Exception {
+        logger.info("Updating policy status with ID: {} to {}", updatePolicyStatusDTO.getPolicyId(),
+                updatePolicyStatusDTO.getNewStatus());
         Network network = gateway.getNetwork("mychannel");
         Contract contract = network.getContract("insurance-chaincode");
 
         byte[] result;
         try {
-            result = contract.submitTransaction("updatePolicyStatus", policyId, newStatus);
+            result = contract.submitTransaction("updatePolicyStatus", updatePolicyStatusDTO.getPolicyId(),
+                    updatePolicyStatusDTO.getNewStatus());
         } catch (ContractException | TimeoutException | InterruptedException e) {
             logger.error("Error updating policy status: {}", e.getMessage());
             throw new RuntimeException("Error updating policy status", e);
         }
         String response = new String(result);
-        logger.info("Updated policy status with ID: {}, response: {}", policyId, response);
+        logger.info("Updated policy status with ID: {}, response: {}", updatePolicyStatusDTO.getPolicyId(), response);
         return PolicyDTO.fromJson(response);
+    }
+
+    public RefundDTO cancelPolicy(CancelPolicyDTO cancelPolicyDTO) throws Exception {
+        logger.info("Cancelling policy with ID: {}", cancelPolicyDTO.getPolicyId());
+        Network network = gateway.getNetwork("mychannel");
+        Contract contract = network.getContract("insurance-chaincode");
+
+        byte[] result;
+        try {
+            result = contract.submitTransaction("cancelPolicy", cancelPolicyDTO.getPolicyId());
+        } catch (ContractException | TimeoutException | InterruptedException e) {
+            logger.error("Error cancelling policy: {}", e.getMessage());
+            throw new RuntimeException("Error cancelling policy", e);
+        }
+        String response = new String(result);
+        logger.info("Cancelled policy with ID: {}, response: {}", cancelPolicyDTO.getPolicyId(), response);
+        return RefundDTO.fromJson(response);
     }
 }

@@ -2,19 +2,13 @@ package com.example.insurance.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class PolicyDTO {
-
-    @JsonProperty("policyId")
-    private String policyId;
+public class CreatePolicyDTO {
 
     @JsonProperty("policyHolder")
     private String policyHolder;
@@ -34,10 +28,10 @@ public class PolicyDTO {
     @JsonProperty("insuranceProduct")
     private InsuranceProductDTO insuranceProduct;
 
-    public PolicyDTO() {
+    public CreatePolicyDTO() {
     }
 
-    public PolicyDTO(String policyHolder, String documentId, double premium, TravelInfoDTO travelInfo,
+    public CreatePolicyDTO(String policyHolder, String documentId, double premium, TravelInfoDTO travelInfo,
             List<PassengerDTO> passengers, InsuranceProductDTO insuranceProduct) {
         this.policyHolder = policyHolder;
         this.documentId = documentId;
@@ -45,14 +39,6 @@ public class PolicyDTO {
         this.travelInfo = travelInfo;
         this.passengers = passengers;
         this.insuranceProduct = insuranceProduct;
-    }
-
-    public String getPolicyId() {
-        return policyId;
-    }
-
-    public void setPolicyId(String policyId) {
-        this.policyId = policyId;
     }
 
     public String getPolicyHolder() {
@@ -108,26 +94,16 @@ public class PolicyDTO {
         try {
             return objectMapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting PolicyDTO to JSON", e);
+            throw new RuntimeException("Error converting CreatePolicyDTO to JSON", e);
         }
     }
 
-    public static PolicyDTO fromJson(String json) {
+    public static CreatePolicyDTO fromJson(String json) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            return objectMapper.readValue(json, PolicyDTO.class);
+            return objectMapper.readValue(json, CreatePolicyDTO.class);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting JSON to PolicyDTO", e);
-        }
-    }
-
-    public static List<PolicyDTO> fromJsonList(String json) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<PolicyDTO>>() {
-            });
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error converting JSON to List<PolicyDTO>", e);
+            throw new RuntimeException("Error converting JSON to CreatePolicyDTO", e);
         }
     }
 }

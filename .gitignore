@@ -48,6 +48,7 @@ insurance-sales-api/target/
 
 # Insurance Chaincode
 insurance-chaincode/build/
+insurance-chaincode/bin/
 insurance-chaincode/target/
 insurance-chaincode/out/
 insurance-chaincode/node_modules/

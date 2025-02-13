@@ -1,24 +1,38 @@
-package com.example.chaincode.dto;
+package com.example.models;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
+
+import java.util.Date;
 
 import org.hyperledger.fabric.contract.annotation.DataType;
 import org.hyperledger.fabric.contract.annotation.Property;
-import org.json.JSONObject;
 
 @DataType()
-public class TravelInfoDTO {
+public class TravelInfo {
+
     @Property()
+    @SerializedName("destination")
     private String destination;
+
     @Property()
+    @SerializedName("startDate")
     private String startDate;
+
     @Property()
+    @SerializedName("endDate")
     private String endDate;
+
     @Property()
+    @SerializedName("numberOfPassengers")
     private int numberOfPassengers;
 
-    public TravelInfoDTO() {
+    private static final Gson gson = new Gson();
+
+    public TravelInfo() {
     }
 
-    public TravelInfoDTO(String destination, String startDate, String endDate, int numberOfPassengers) {
+    public TravelInfo(String destination, String startDate, String endDate, int numberOfPassengers) {
         this.destination = destination;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -61,21 +75,11 @@ public class TravelInfoDTO {
 
     // Serialize to JSON
     public String toJson() {
-        JSONObject json = new JSONObject();
-        json.put("destination", destination);
-        json.put("startDate", startDate);
-        json.put("endDate", endDate);
-        json.put("numberOfPassengers", numberOfPassengers);
-        return json.toString();
+        return gson.toJson(this);
     }
 
     // Deserialize from JSON
-    public static TravelInfoDTO fromJson(String json) {
-        JSONObject jsonObj = new JSONObject(json);
-        return new TravelInfoDTO(
-                jsonObj.getString("destination"),
-                jsonObj.getString("startDate"),
-                jsonObj.getString("endDate"),
-                jsonObj.getInt("numberOfPassengers"));
+    public static TravelInfo fromJson(String json) {
+        return gson.fromJson(json, TravelInfo.class);
     }
 }

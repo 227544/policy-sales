@@ -1,20 +1,27 @@
-package com.example.chaincode.dto;
+package com.example.models;
 
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import org.hyperledger.fabric.contract.annotation.DataType;
 import org.hyperledger.fabric.contract.annotation.Property;
-import org.json.JSONObject;
 
 @DataType()
-public class InsuranceProductDTO {
+public class InsuranceProduct {
+
     @Property()
+    @SerializedName("coverageName")
     private String coverageName;
+
     @Property()
+    @SerializedName("insuredAmount")
     private double insuredAmount;
 
-    public InsuranceProductDTO() {
+    private static final Gson gson = new Gson();
+
+    public InsuranceProduct() {
     }
 
-    public InsuranceProductDTO(String coverageName, double insuredAmount) {
+    public InsuranceProduct(String coverageName, double insuredAmount) {
         this.coverageName = coverageName;
         this.insuredAmount = insuredAmount;
     }
@@ -39,18 +46,11 @@ public class InsuranceProductDTO {
 
     // Serialize to JSON
     public String toJson() {
-        JSONObject json = new JSONObject();
-        json.put("coverageName", coverageName);
-        json.put("insuredAmount", insuredAmount);
-        return json.toString();
+        return gson.toJson(this);
     }
 
     // Deserialize from JSON
-    public static InsuranceProductDTO fromJson(String json) {
-        JSONObject jsonObj = new JSONObject(json);
-        return new InsuranceProductDTO(
-                jsonObj.getString("coverageName"),
-                jsonObj.getDouble("insuredAmount"));
+    public static InsuranceProduct fromJson(String json) {
+        return gson.fromJson(json, InsuranceProduct.class);
     }
-
 }

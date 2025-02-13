@@ -10,7 +10,7 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI().info(new Info().title("Insurance API").version("1.0.0")
-                .description("API documentation for the Insurance Management System"));
+        return new OpenAPI().info(new Info().title("Policy Sales API").version("1.0.0")
+                .description("API documentation for the Insurance Policy Sales based on Blockchain application"));
     }
 }
