@@ -3,8 +3,6 @@ package com.example.models;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
-import java.util.Date;
-
 import org.hyperledger.fabric.contract.annotation.DataType;
 import org.hyperledger.fabric.contract.annotation.Property;
 
