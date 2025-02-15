@@ -227,7 +227,7 @@ public class PolicyContract implements ContractInterface {
             double refundAmount = calculateRefund(policy);
 
             // Create Refund
-            Refund refund = new Refund(policyId, policy.getPolicyHolder(), refundAmount);
+            Refund refund = new Refund(policyId, policy.getPolicyHolder(), refundAmount, policy.getPolicyStatus());
 
             // Save the updated policy state
             stub.putStringState(policyId, policy.toJson());

@@ -7,16 +7,18 @@ public class Refund {
     private String policyId;
     private String policyHolder;
     private double refundAmount;
+    private String policyStatus;
 
     private static final Gson gson = new Gson();
 
     public Refund() {
     }
 
-    public Refund(String policyId, String policyHolder, double refundAmount) {
+    public Refund(String policyId, String policyHolder, double refundAmount, String policyStatus) {
         this.policyId = policyId;
         this.policyHolder = policyHolder;
         this.refundAmount = refundAmount;
+        this.policyStatus = policyStatus;
     }
 
     public String getPolicyId() {
@@ -41,6 +43,14 @@ public class Refund {
 
     public void setRefundAmount(double refundAmount) {
         this.refundAmount = refundAmount;
+    }
+
+    public String getPolicyStatus() {
+        return policyStatus;
+    }
+
+    public void setPolicyStatus(String policyStatus) {
+        this.policyStatus = policyStatus;
     }
 
     // Serialize to JSON
