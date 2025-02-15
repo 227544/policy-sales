@@ -28,6 +28,7 @@ import com.google.gson.Gson;
 public class PolicyContract implements ContractInterface {
 
     private static final Logger logger = Logger.getLogger(PolicyContract.class.getName());
+    private final EligibilityContract eligibilityContract = new EligibilityContract();
 
     @Transaction(intent = Transaction.TYPE.SUBMIT)
     public void init(Context ctx) {
@@ -46,17 +47,12 @@ public class PolicyContract implements ContractInterface {
             // Convert JSON string to Policy
             Policy policy = Policy.fromJson(policyJson);
 
-            // Validate and parse dates
-            String startDate = policy.getTravelInfo().getStartDate();
-            String endDate = policy.getTravelInfo().getEndDate();
-            if (startDate == null || endDate == null) {
-                String errorMessage = "Start date and end date are required.";
-                logger.severe(errorMessage);
-                throw new ChaincodeException(errorMessage, "INVALID_DATES");
-            }
+            // Validate policy creation
+            eligibilityContract.validatePolicyCreation(policy);
 
             // Create TravelInfo
-            TravelInfo travelInfo = new TravelInfo(policy.getTravelInfo().getDestination(), startDate, endDate,
+            TravelInfo travelInfo = new TravelInfo(policy.getTravelInfo().getDestination(),
+                    policy.getTravelInfo().getStartDate(), policy.getTravelInfo().getEndDate(),
                     policy.getTravelInfo().getNumberOfPassengers());
 
             // Create passengers list
@@ -188,10 +184,16 @@ public class PolicyContract implements ContractInterface {
 
             String policyJson = stub.getStringState(policyId);
             if (policyJson == null || policyJson.isEmpty()) {
-                throw new ChaincodeException("Policy with ID " + policyId + " does not exist.", "POLICY_NOT_FOUND");
+                String errorMessage = "Policy with ID " + policyId + " does not exist.";
+                logger.severe(errorMessage);
+                throw new ChaincodeException(errorMessage, "POLICY_NOT_FOUND");
             }
 
             Policy policy = Policy.fromJson(policyJson);
+
+            // Validate policy update
+            eligibilityContract.validatePolicyUpdate(policy, newStatus);
+
             policy.setPolicyStatus(newStatus);
 
             stub.putStringState(policyId, policy.toJson());
@@ -221,6 +223,10 @@ public class PolicyContract implements ContractInterface {
             }
 
             Policy policy = Policy.fromJson(policyJson);
+
+            // Validate policy cancellation
+            eligibilityContract.validatePolicyCancellation(policy);
+
             policy.setPolicyStatus(Policy.PolicyStatus.CANCELLED.name());
 
             // Calculate refund amount
