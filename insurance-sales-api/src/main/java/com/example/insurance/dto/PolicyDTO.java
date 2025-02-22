@@ -25,6 +25,9 @@ public class PolicyDTO {
     @JsonProperty("premium")
     private double premium;
 
+    @JsonProperty("policyStatus")
+    private String policyStatus;
+
     @JsonProperty("travelInfo")
     private TravelInfoDTO travelInfo;
 
@@ -38,10 +41,11 @@ public class PolicyDTO {
     }
 
     public PolicyDTO(String policyHolder, String documentId, double premium, TravelInfoDTO travelInfo,
-            List<PassengerDTO> passengers, InsuranceProductDTO insuranceProduct) {
+            List<PassengerDTO> passengers, InsuranceProductDTO insuranceProduct, String policyStatus) {
         this.policyHolder = policyHolder;
         this.documentId = documentId;
         this.premium = premium;
+        this.policyStatus = policyStatus;
         this.travelInfo = travelInfo;
         this.passengers = passengers;
         this.insuranceProduct = insuranceProduct;
@@ -77,6 +81,14 @@ public class PolicyDTO {
 
     public void setPremium(double premium) {
         this.premium = premium;
+    }
+
+    public String getPolicyStatus() {
+        return policyStatus;
+    }
+
+    public void setPolicyStatus(String policyStatus) {
+        this.policyStatus = policyStatus;
     }
 
     public TravelInfoDTO getTravelInfo() {

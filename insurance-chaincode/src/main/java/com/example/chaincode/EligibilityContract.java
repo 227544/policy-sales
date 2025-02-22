@@ -4,7 +4,8 @@ import com.example.models.Policy;
 import org.hyperledger.fabric.shim.ChaincodeException;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.logging.Logger;
 
 public class EligibilityContract {
@@ -24,8 +25,8 @@ public class EligibilityContract {
             throw new ChaincodeException("Start date and end date are required.", "INVALID_DATES");
         }
 
-        LocalDate startDate = LocalDate.parse(startDateStr, DateTimeFormatter.ISO_DATE);
-        LocalDate endDate = LocalDate.parse(endDateStr, DateTimeFormatter.ISO_DATE);
+        LocalDate startDate = convertTimestampToLocalDate(startDateStr);
+        LocalDate endDate = convertTimestampToLocalDate(endDateStr);
         LocalDate today = LocalDate.now();
 
         if (startDate.isBefore(today) || startDate.isEqual(today)) {
@@ -88,5 +89,12 @@ public class EligibilityContract {
         // Additional business rules for policy cancellation can be added here
 
         logger.info("Policy cancellation validated successfully.");
+    }
+
+    // Convert timestamp to LocalDate
+    private LocalDate convertTimestampToLocalDate(String timestampStr) {
+        long timestamp = Long.parseLong(timestampStr);
+        Date date = new Date(timestamp);
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 }
