@@ -38,10 +38,6 @@ node_modules/
 fabric-samples/
 
 # Insurance API resources
-insurance-sales-api/src/main/resources/tls/
-insurance-sales-api/src/main/resources/msp/
-insurance-sales-api/src/main/resources/credentials/
-insurance-sales-api/src/main/resources/wallet/
 insurance-sales-api/logs/
 insurance-sales-api/target/
 
